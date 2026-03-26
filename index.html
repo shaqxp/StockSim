@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StockSim – Virtual Portfolio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#080a0f;--surface:#0d1117;--surface2:#161b22;--surface3:#1c2330;--border:#21262d;--amber:#f0a500;--amber2:#ffcb47;--green:#3fb950;--red:#f85149;--blue:#58a6ff;--text:#e6edf3;--muted:#484f58;--muted2:#6e7681;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;background-image:radial-gradient(ellipse at 10% 0%,rgba(240,165,0,0.06) 0%,transparent 50%),radial-gradient(ellipse at 90% 100%,rgba(88,166,255,0.04) 0%,transparent 50%);}
+#root{max-width:1300px;margin:0 auto;padding:20px 16px;}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.logo{font-family:'IBM Plex Mono',monospace;font-size:1.4rem;font-weight:700;letter-spacing:-1px;}.logo-s{color:var(--amber);}
+.logo-tag{font-size:0.65rem;color:var(--muted2);letter-spacing:3px;text-transform:uppercase;margin-top:3px;}
+.header-right{text-align:right;}.cash-label{font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);}
+.cash-val{font-family:'IBM Plex Mono',monospace;font-size:1.6rem;font-weight:700;color:var(--amber);}
+.summary-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;}
+.s-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;transition:border-color .2s;}.s-card:hover{border-color:var(--amber);}
+.s-lbl{font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);margin-bottom:6px;}
+.s-val{font-family:'IBM Plex Mono',monospace;font-size:1.25rem;font-weight:600;}.s-sub{font-size:0.7rem;color:var(--muted2);margin-top:3px;}
+.up{color:var(--green);}.dn{color:var(--red);}.neu{color:var(--blue);}
+.ticker-bar{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 16px;margin-bottom:20px;overflow:hidden;white-space:nowrap;}
+.ticker-inner{display:inline-flex;gap:32px;animation:ticker 40s linear infinite;}.ticker-inner:hover{animation-play-state:paused;}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tick-item{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;display:inline-flex;gap:8px;align-items:center;}
+.tick-sym{color:var(--amber2);}.tick-px{color:var(--text);}
+.main{display:grid;grid-template-columns:1fr 360px;gap:20px;}
+@media(max-width:960px){.main{grid-template-columns:1fr;}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
+.card-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.card-title{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--amber);letter-spacing:1px;}
+.chart-wrap{position:relative;height:220px;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+thead tr{border-bottom:1px solid var(--border);}
+th{font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);padding:8px 10px;text-align:right;white-space:nowrap;}th:first-child{text-align:left;}
+td{padding:10px 10px;text-align:right;border-bottom:1px solid rgba(33,38,45,0.6);white-space:nowrap;}td:first-child{text-align:left;}
+tr:last-child td{border-bottom:none;}tr:hover td{background:var(--surface2);}
+.sym{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--amber2);}.co-name{font-size:0.7rem;color:var(--muted2);margin-top:2px;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.sell-btn{background:rgba(248,81,73,0.12);border:1px solid rgba(248,81,73,0.3);color:var(--red);border-radius:5px;padding:4px 10px;cursor:pointer;font-size:0.72rem;font-family:'IBM Plex Sans',sans-serif;transition:all .2s;}.sell-btn:hover{background:rgba(248,81,73,0.25);}
+.empty{text-align:center;padding:40px;color:var(--muted2);font-size:0.85rem;}.empty-icon{font-size:2rem;margin-bottom:8px;opacity:.4;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
+.panel-title{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--amber);letter-spacing:1px;margin-bottom:14px;}
+.search-wrap{position:relative;margin-bottom:12px;}
+.search-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:0.875rem;outline:none;transition:border-color .2s;}
+.search-input:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(240,165,0,0.1);}
+.dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--amber);border-radius:8px;margin-top:4px;z-index:100;max-height:240px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.6);}
+.dropdown::-webkit-scrollbar{width:4px;}.dropdown::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.dd-item{padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(33,38,45,0.5);transition:background .15s;}.dd-item:last-child{border-bottom:none;}.dd-item:hover{background:var(--surface3);}
+.dd-sym{font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:var(--amber2);font-weight:600;}
+.dd-name{font-size:0.72rem;color:var(--muted2);margin-top:2px;}
+.dd-right{text-align:right;}.dd-price{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--text);}
+label{display:block;font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);margin-bottom:5px;}
+input,select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:0.85rem;outline:none;transition:border-color .2s;}
+input:focus,select:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(240,165,0,0.08);}
+select option{background:var(--surface2);}
+.form-group{margin-bottom:12px;}
+.buy-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.quote-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.q-sym{font-family:'IBM Plex Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--amber2);}
+.q-name{font-size:0.73rem;color:var(--muted2);margin-bottom:10px;margin-top:2px;}
+.q-price{font-family:'IBM Plex Mono',monospace;font-size:1.5rem;font-weight:700;color:var(--text);}
+.q-change{font-size:0.78rem;margin-top:4px;}
+.q-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.q-stat{font-size:0.7rem;color:var(--muted2);}.q-stat span{display:block;font-family:'IBM Plex Mono',monospace;color:var(--text);margin-top:2px;font-size:0.78rem;}
+.buy-btn{width:100%;padding:11px;background:var(--amber);color:#080a0f;border:none;border-radius:8px;font-weight:700;font-size:0.9rem;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:all .2s;margin-top:4px;}
+.buy-btn:hover{background:var(--amber2);box-shadow:0 4px 20px rgba(240,165,0,0.3);}.buy-btn:disabled{opacity:.4;cursor:not-allowed;}
+.cost-preview{font-size:0.75rem;color:var(--muted2);text-align:center;margin-top:6px;font-family:'IBM Plex Mono',monospace;}.cost-preview strong{color:var(--amber);}
+.err{font-size:0.75rem;color:var(--red);margin-top:6px;text-align:center;}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.preset-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted2);border-radius:5px;padding:4px 10px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;transition:all .2s;}.preset-btn:hover{border-color:var(--amber);color:var(--amber);}
+.tx-log{margin-top:20px;padding-top:20px;border-top:1px solid var(--border);}
+.tx-items{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.tx-items::-webkit-scrollbar{width:3px;}.tx-items::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.tx-entry{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;animation:fadeIn .3s ease;}
+.tx-sym{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--amber2);font-size:0.8rem;}
+.tx-meta{color:var(--muted2);margin-top:1px;}
+.tx-amt{font-family:'IBM Plex Mono',monospace;font-size:0.8rem;font-weight:600;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+const INITIAL_CASH = 100000;
+
+const ALL_STOCKS = [
+  {symbol:'RELIANCE.NS',  name:'Reliance Industries',        price:2890,  sector:'Energy',       exch:'NSE'},
+  {symbol:'TCS.NS',       name:'Tata Consultancy Services',  price:3620,  sector:'IT',            exch:'NSE'},
+  {symbol:'INFY.NS',      name:'Infosys',                    price:1478,  sector:'IT',            exch:'NSE'},
+  {symbol:'HDFCBANK.NS',  name:'HDFC Bank',                  price:1720,  sector:'Banking',       exch:'NSE'},
+  {symbol:'ICICIBANK.NS', name:'ICICI Bank',                 price:1285,  sector:'Banking',       exch:'NSE'},
+  {symbol:'SBIN.NS',      name:'State Bank of India',        price:812,   sector:'Banking',       exch:'NSE'},
+  {symbol:'KOTAKBANK.NS', name:'Kotak Mahindra Bank',        price:1980,  sector:'Banking',       exch:'NSE'},
+  {symbol:'AXISBANK.NS',  name:'Axis Bank',                  price:1142,  sector:'Banking',       exch:'NSE'},
+  {symbol:'BAJFINANCE.NS',name:'Bajaj Finance',              price:7210,  sector:'Finance',       exch:'NSE'},
+  {symbol:'BAJAJFINSV.NS',name:'Bajaj Finserv',              price:1885,  sector:'Finance',       exch:'NSE'},
+  {symbol:'WIPRO.NS',     name:'Wipro',                      price:480,   sector:'IT',            exch:'NSE'},
+  {symbol:'HCLTECH.NS',   name:'HCL Technologies',           price:1620,  sector:'IT',            exch:'NSE'},
+  {symbol:'TECHM.NS',     name:'Tech Mahindra',              price:1340,  sector:'IT',            exch:'NSE'},
+  {symbol:'LT.NS',        name:'Larsen and Toubro',          price:3580,  sector:'Infra',         exch:'NSE'},
+  {symbol:'TATAMOTORS.NS',name:'Tata Motors',                price:945,   sector:'Auto',          exch:'NSE'},
+  {symbol:'MARUTI.NS',    name:'Maruti Suzuki',              price:12400, sector:'Auto',          exch:'NSE'},
+  {symbol:'MNM.NS',       name:'Mahindra and Mahindra',      price:2890,  sector:'Auto',          exch:'NSE'},
+  {symbol:'HEROMOTOCO.NS',name:'Hero MotoCorp',              price:4580,  sector:'Auto',          exch:'NSE'},
+  {symbol:'BAJAJAUTO.NS', name:'Bajaj Auto',                 price:9250,  sector:'Auto',          exch:'NSE'},
+  {symbol:'TATASTEEL.NS', name:'Tata Steel',                 price:162,   sector:'Metal',         exch:'NSE'},
+  {symbol:'JSWSTEEL.NS',  name:'JSW Steel',                  price:920,   sector:'Metal',         exch:'NSE'},
+  {symbol:'HINDALCO.NS',  name:'Hindalco Industries',        price:688,   sector:'Metal',         exch:'NSE'},
+  {symbol:'ONGC.NS',      name:'ONGC',                       price:272,   sector:'Energy',        exch:'NSE'},
+  {symbol:'NTPC.NS',      name:'NTPC',                       price:358,   sector:'Energy',        exch:'NSE'},
+  {symbol:'POWERGRID.NS', name:'Power Grid Corp',            price:325,   sector:'Energy',        exch:'NSE'},
+  {symbol:'ADANIENT.NS',  name:'Adani Enterprises',          price:2480,  sector:'Conglomerate',  exch:'NSE'},
+  {symbol:'ADANIPORTS.NS',name:'Adani Ports',                price:1285,  sector:'Infra',         exch:'NSE'},
+  {symbol:'HINDUNILVR.NS',name:'Hindustan Unilever',         price:2350,  sector:'FMCG',          exch:'NSE'},
+  {symbol:'ITC.NS',       name:'ITC Limited',                price:452,   sector:'FMCG',          exch:'NSE'},
+  {symbol:'NESTLEIND.NS', name:'Nestle India',               price:2280,  sector:'FMCG',          exch:'NSE'},
+  {symbol:'BRITANNIA.NS', name:'Britannia Industries',       price:5120,  sector:'FMCG',          exch:'NSE'},
+  {symbol:'SUNPHARMA.NS', name:'Sun Pharmaceutical',         price:1820,  sector:'Pharma',        exch:'NSE'},
+  {symbol:'DRREDDY.NS',   name:'Dr Reddys Labs',             price:6250,  sector:'Pharma',        exch:'NSE'},
+  {symbol:'CIPLA.NS',     name:'Cipla',                      price:1520,  sector:'Pharma',        exch:'NSE'},
+  {symbol:'DIVISLAB.NS',  name:'Divis Laboratories',         price:4850,  sector:'Pharma',        exch:'NSE'},
+  {symbol:'APOLLOHOSP.NS',name:'Apollo Hospitals',           price:7120,  sector:'Healthcare',    exch:'NSE'},
+  {symbol:'ASIANPAINT.NS',name:'Asian Paints',               price:2680,  sector:'Paint',         exch:'NSE'},
+  {symbol:'ULTRACEMCO.NS',name:'UltraTech Cement',           price:11200, sector:'Cement',        exch:'NSE'},
+  {symbol:'TITAN.NS',     name:'Titan Company',              price:3480,  sector:'Consumer',      exch:'NSE'},
+  {symbol:'ZOMATO.NS',    name:'Zomato',                     price:238,   sector:'Tech',          exch:'NSE'},
+  {symbol:'NYKAA.NS',     name:'Nykaa FSN E-Commerce',       price:182,   sector:'Tech',          exch:'NSE'},
+  {symbol:'PAYTM.NS',     name:'Paytm One97 Communications', price:890,   sector:'Fintech',       exch:'NSE'},
+  {symbol:'IRCTC.NS',     name:'IRCTC Indian Railway',       price:785,   sector:'Travel',        exch:'NSE'},
+  {symbol:'INDIGO.NS',    name:'IndiGo InterGlobe Aviation', price:4250,  sector:'Aviation',      exch:'NSE'},
+  {symbol:'DMART.NS',     name:'DMart Avenue Supermarts',    price:4820,  sector:'Retail',        exch:'NSE'},
+  {symbol:'TATACONSUM.NS',name:'Tata Consumer Products',     price:1120,  sector:'FMCG',          exch:'NSE'},
+  {symbol:'COALINDIA.NS', name:'Coal India',                 price:455,   sector:'Energy',        exch:'NSE'},
+  {symbol:'GRASIM.NS',    name:'Grasim Industries',          price:2720,  sector:'Diversified',   exch:'NSE'},
+  {symbol:'EICHERMOT.NS', name:'Eicher Motors Royal Enfield',price:4980,  sector:'Auto',          exch:'NSE'},
+  {symbol:'PIDILITIND.NS',name:'Pidilite Industries',        price:2850,  sector:'Chemical',      exch:'NSE'},
+  {symbol:'LTIM.NS',      name:'LTIMindtree',                price:4920,  sector:'IT',            exch:'NSE'},
+  {symbol:'AAPL',  name:'Apple Inc',        price:218,  sector:'Tech',    exch:'NASDAQ'},
+  {symbol:'MSFT',  name:'Microsoft',        price:415,  sector:'Tech',    exch:'NASDAQ'},
+  {symbol:'GOOGL', name:'Alphabet Google',  price:178,  sector:'Tech',    exch:'NASDAQ'},
+  {symbol:'AMZN',  name:'Amazon',           price:198,  sector:'Tech',    exch:'NASDAQ'},
+  {symbol:'NVDA',  name:'NVIDIA',           price:124,  sector:'Tech',    exch:'NASDAQ'},
+  {symbol:'TSLA',  name:'Tesla',            price:245,  sector:'Auto',    exch:'NASDAQ'},
+  {symbol:'META',  name:'Meta Platforms',   price:595,  sector:'Tech',    exch:'NASDAQ'},
+  {symbol:'NFLX',  name:'Netflix',          price:985,  sector:'Media',   exch:'NASDAQ'},
+  {symbol:'JPM',   name:'JPMorgan Chase',   price:245,  sector:'Banking', exch:'NYSE'},
+  {symbol:'V',     name:'Visa Inc',         price:315,  sector:'Finance', exch:'NYSE'},
+];
+
+// Fixed random daily variance per session
+const LIVE = {};
+ALL_STOCKS.forEach(s => {
+  const v = (Math.random() - 0.48) * 0.028;
+  LIVE[s.symbol] = +(s.price * (1 + v)).toFixed(2);
+});
+
+const fmt  = n => Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtC = n => (n>=0?'+':'')+fmt(n);
+
+function seedHistory(cash) {
+  const now = Date.now();
+  return Array.from({length:10},(_,i)=>({t:now-(9-i)*3600000,v:cash+(Math.random()-0.5)*3000})).concat([{t:now,v:cash}]);
+}
+
+function PortfolioChart({history}) {
+  const ref = useRef(null), chartRef = useRef(null);
+  useEffect(()=>{
+    if(chartRef.current){chartRef.current.destroy();chartRef.current=null;}
+    if(!ref.current||history.length<2) return;
+    const vals = history.map(p=>p.v);
+    const color = vals[vals.length-1]>=vals[0]?'#3fb950':'#f85149';
+    chartRef.current = new Chart(ref.current,{
+      type:'line',
+      data:{
+        labels:history.map(p=>new Date(p.t).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})),
+        datasets:[{data:vals,borderColor:color,borderWidth:2,pointRadius:0,pointHoverRadius:4,fill:true,tension:0.4,
+          backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,200);g.addColorStop(0,color+'33');g.addColorStop(1,color+'00');return g;}}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' Rs'+fmt(c.parsed.y)},backgroundColor:'#0d1117',borderColor:'#21262d',borderWidth:1,titleColor:'#6e7681',bodyColor:'#e6edf3'}},
+        scales:{x:{ticks:{color:'#484f58',font:{size:10},maxTicksLimit:6},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#484f58',font:{size:10},callback:v=>'Rs'+(v>=1000?(v/1000).toFixed(0)+'k':v)},grid:{color:'rgba(255,255,255,0.05)'}}},
+        animation:{duration:400}}
+    });
+    return ()=>{if(chartRef.current)chartRef.current.destroy();};
+  },[history]);
+  return <canvas ref={ref}/>;
+}
+
+function App() {
+  const [cash,     setCash]     = useState(INITIAL_CASH);
+  const [holdings, setHoldings] = useState([]);
+  const [txLog,    setTxLog]    = useState([]);
+  const [history,  setHistory]  = useState(()=>seedHistory(INITIAL_CASH));
+  const [search,   setSearch]   = useState('');
+  const [quote,    setQuote]    = useState(null);
+  const [qty,      setQty]      = useState(1);
+  const [buyErr,   setBuyErr]   = useState('');
+  const [showDd,   setShowDd]   = useState(false);
+
+  const mktValue  = holdings.reduce((s,h)=>s+h.qty*h.currentPrice,0);
+  const totalPnl  = mktValue - holdings.reduce((s,h)=>s+h.qty*h.avgPrice,0);
+  const totalVal  = cash + mktValue;
+  const totalRet  = ((totalVal-INITIAL_CASH)/INITIAL_CASH)*100;
+
+  useEffect(()=>{
+    setHistory(prev=>[...prev.slice(-99),{t:Date.now(),v:totalVal}]);
+  },[mktValue,cash]);
+
+  const suggestions = useMemo(()=>{
+    if(!search.trim()) return [];
+    const q = search.toLowerCase();
+    return ALL_STOCKS.filter(s=>
+      s.symbol.toLowerCase().replace('.ns','').includes(q)||
+      s.name.toLowerCase().includes(q)||
+      s.sector.toLowerCase().includes(q)
+    ).slice(0,8);
+  },[search]);
+
+  const selectStock = s => {
+    const lp = LIVE[s.symbol]||s.price;
+    const chg = lp - s.price;
+    setQuote({...s, livePrice:lp, change:+chg.toFixed(2), changePct:+(chg/s.price*100).toFixed(2),
+      high:+(lp*1.009).toFixed(2), low:+(lp*0.991).toFixed(2),
+      volume:Math.floor(Math.random()*8000000+200000)});
+    setSearch(s.name); setShowDd(false); setBuyErr(''); setQty(1);
+  };
+
+  const buy = () => {
+    if(!quote) return;
+    const q = Number(qty), cost = q * quote.livePrice;
+    setBuyErr('');
+    if(q<1||isNaN(q)){setBuyErr('Enter a valid quantity.');return;}
+    if(cost>cash){setBuyErr(`Need Rs${fmt(cost)}, you have Rs${fmt(cash)}.`);return;}
+    setCash(c=>c-cost);
+    setHoldings(prev=>{
+      const ex = prev.find(h=>h.symbol===quote.symbol);
+      if(ex) return prev.map(h=>h.symbol===quote.symbol?{...h,qty:h.qty+q,avgPrice:(h.qty*h.avgPrice+cost)/(h.qty+q),currentPrice:quote.livePrice}:h);
+      return [...prev,{symbol:quote.symbol,name:quote.name,qty:q,avgPrice:quote.livePrice,currentPrice:quote.livePrice,exch:quote.exch}];
+    });
+    setTxLog(l=>[{id:Date.now(),type:'BUY',symbol:quote.symbol,qty:q,price:quote.livePrice,total:cost,ts:new Date()},...l]);
+    setQty(1);
+  };
+
+  const sell = symbol => {
+    const h = holdings.find(x=>x.symbol===symbol);
+    if(!h) return;
+    const proceeds = h.qty * h.currentPrice;
+    setCash(c=>c+proceeds);
+    setTxLog(l=>[{id:Date.now(),type:'SELL',symbol,qty:h.qty,price:h.currentPrice,total:proceeds,ts:new Date()},...l]);
+    setHoldings(prev=>prev.filter(x=>x.symbol!==symbol));
+  };
+
+  const cost = (Number(qty)||0)*(quote?.livePrice||0);
+  const tickerStocks = ALL_STOCKS.slice(0,16);
+
+  return (
+    <div onClick={()=>setShowDd(false)}>
+      <div className="header">
+        <div>
+          <div className="logo"><span className="logo-s">Stock</span>Sim</div>
+          <div className="logo-tag">60 Stocks · NSE + NASDAQ + NYSE · Paper Trading</div>
+        </div>
+        <div className="header-right">
+          <div className="cash-label">Available Cash</div>
+          <div className="cash-val">Rs {fmt(cash)}</div>
+        </div>
+      </div>
+
+      <div className="ticker-bar">
+        <div className="ticker-inner">
+          {[...tickerStocks,...tickerStocks].map((s,i)=>{
+            const lp=LIVE[s.symbol], chg=((lp-s.price)/s.price*100);
+            return <span className="tick-item" key={i}>
+              <span className="tick-sym">{s.symbol.replace('.NS','')}</span>
+              <span className="tick-px">{lp.toLocaleString('en-IN',{maximumFractionDigits:0})}</span>
+              <span className={chg>=0?'up':'dn'} style={{fontSize:'0.68rem'}}>{chg>=0?'▲':'▼'}{Math.abs(chg).toFixed(2)}%</span>
+            </span>;
+          })}
+        </div>
+      </div>
+
+      <div className="summary-bar">
+        <div className="s-card"><div className="s-lbl">Portfolio Value</div><div className={`s-val ${totalVal>=INITIAL_CASH?'up':'dn'}`}>Rs {fmt(totalVal)}</div><div className="s-sub">Started Rs {fmt(INITIAL_CASH)}</div></div>
+        <div className="s-card"><div className="s-lbl">Total Return</div><div className={`s-val ${totalRet>=0?'up':'dn'}`}>{fmtC(totalRet)}%</div><div className="s-sub">{fmtC(totalVal-INITIAL_CASH)} overall</div></div>
+        <div className="s-card"><div className="s-lbl">Unrealised P&L</div><div className={`s-val ${totalPnl>=0?'up':'dn'}`}>Rs {fmtC(totalPnl)}</div><div className="s-sub">on open positions</div></div>
+        <div className="s-card"><div className="s-lbl">Holdings</div><div className="s-val neu">{holdings.length}</div><div className="s-sub">{txLog.length} trades executed</div></div>
+      </div>
+
+      <div className="main">
+        <div>
+          <div className="card" style={{marginBottom:16}}>
+            <div className="card-hdr"><span className="card-title">// PORTFOLIO VALUE</span><span style={{fontSize:'0.68rem',color:'var(--muted2)',fontFamily:"'IBM Plex Mono',monospace"}}>Rs {fmt(totalVal)}</span></div>
+            <div className="chart-wrap"><PortfolioChart history={history}/></div>
+          </div>
+
+          <div className="card">
+            <div className="card-hdr"><span className="card-title">// HOLDINGS</span>{holdings.length>0&&<span style={{fontSize:'0.68rem',color:'var(--muted2)'}}>Mkt Val: Rs {fmt(mktValue)}</span>}</div>
+            {holdings.length===0
+              ?<div className="empty"><div className="empty-icon">📊</div>No holdings yet. Search a stock and buy!</div>
+              :<div className="table-wrap"><table>
+                <thead><tr><th style={{textAlign:'left'}}>Stock</th><th>Qty</th><th>Avg Price</th><th>Curr Price</th><th>Mkt Val</th><th>P&amp;L</th><th>Return</th><th></th></tr></thead>
+                <tbody>
+                  {holdings.map(h=>{
+                    const pnl=(h.currentPrice-h.avgPrice)*h.qty, ret=(h.currentPrice-h.avgPrice)/h.avgPrice*100;
+                    return <tr key={h.symbol}>
+                      <td><div className="sym">{h.symbol.replace('.NS','')}</div><div className="co-name">{h.exch}</div></td>
+                      <td className="mono">{h.qty}</td>
+                      <td className="mono">Rs {fmt(h.avgPrice)}</td>
+                      <td className="mono">Rs {fmt(h.currentPrice)}</td>
+                      <td className="mono">Rs {fmt(h.qty*h.currentPrice)}</td>
+                      <td className={`mono ${pnl>=0?'up':'dn'}`}>Rs {fmtC(pnl)}</td>
+                      <td className={`mono ${ret>=0?'up':'dn'}`}>{fmtC(ret)}%</td>
+                      <td><button className="sell-btn" onClick={()=>sell(h.symbol)}>SELL</button></td>
+                    </tr>;
+                  })}
+                </tbody>
+              </table></div>
+            }
+            {txLog.length>0&&<div className="tx-log">
+              <div className="card-title" style={{marginBottom:10}}>// TRADE LOG</div>
+              <div className="tx-items">
+                {txLog.map(t=><div className="tx-entry" key={t.id}>
+                  <div><div className="tx-sym">{t.type} · {t.symbol.replace('.NS','')}</div><div className="tx-meta">{t.qty} shares @ Rs {fmt(t.price)} · {t.ts.toLocaleTimeString()}</div></div>
+                  <div className={`tx-amt ${t.type==='BUY'?'dn':'up'}`}>{t.type==='BUY'?'-':'+'}Rs {fmt(t.total)}</div>
+                </div>)}
+              </div>
+            </div>}
+          </div>
+        </div>
+
+        <div>
+          <div className="panel">
+            <div className="panel-title">// SEARCH &amp; TRADE</div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:'0.62rem',letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--muted2)',marginBottom:6}}>Quick Pick (NSE)</div>
+              <div className="presets">
+                {ALL_STOCKS.slice(0,10).map(s=><button key={s.symbol} className="preset-btn" onClick={()=>selectStock(s)}>{s.symbol.replace('.NS','')}</button>)}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Search — name, symbol or sector</label>
+              <div className="search-wrap" onClick={e=>e.stopPropagation()}>
+                <input className="search-input" placeholder="e.g. Zomato, TATAMOTORS, Banking..." value={search}
+                  onChange={e=>{setSearch(e.target.value);setShowDd(true);setQuote(null);}}
+                  onFocus={()=>setShowDd(true)}/>
+                {showDd&&suggestions.length>0&&<div className="dropdown">
+                  {suggestions.map(s=>{
+                    const lp=LIVE[s.symbol], chg=((lp-s.price)/s.price*100);
+                    return <div className="dd-item" key={s.symbol} onClick={()=>selectStock(s)}>
+                      <div><div className="dd-sym">{s.symbol.replace('.NS','')}</div><div className="dd-name">{s.name}</div></div>
+                      <div className="dd-right"><div className="dd-price">Rs {lp.toLocaleString('en-IN',{maximumFractionDigits:0})}</div><div className={chg>=0?'up':'dn'} style={{fontSize:'0.68rem'}}>{chg>=0?'▲':'▼'}{Math.abs(chg).toFixed(2)}%</div></div>
+                    </div>;
+                  })}
+                </div>}
+              </div>
+            </div>
+
+            {quote&&<div>
+              <div className="quote-card">
+                <div className="q-sym">{quote.symbol.replace('.NS','')}</div>
+                <div className="q-name">{quote.name} · {quote.exch} · {quote.sector}</div>
+                <div className="q-price">Rs {fmt(quote.livePrice)}</div>
+                <div className={`q-change ${quote.change>=0?'up':'dn'}`}>{quote.change>=0?'▲':'▼'} {Math.abs(quote.change).toFixed(2)} ({Math.abs(quote.changePct).toFixed(2)}%) today</div>
+                <div className="q-row">
+                  <div className="q-stat">Day High<span>Rs {fmt(quote.high)}</span></div>
+                  <div className="q-stat">Day Low<span>Rs {fmt(quote.low)}</span></div>
+                  <div className="q-stat">Prev Close<span>Rs {fmt(quote.price)}</span></div>
+                  <div className="q-stat">Volume<span>{quote.volume.toLocaleString()}</span></div>
+                </div>
+              </div>
+              <div className="buy-row">
+                <div><label>Quantity</label><input type="number" min="1" value={qty} onChange={e=>setQty(e.target.value)}/></div>
+                <div><label>Order Type</label><select><option>Market</option></select></div>
+              </div>
+              {cost>0&&<div className="cost-preview">Cost: <strong>Rs {fmt(cost)}</strong> · After: <strong style={{color:cost>cash?'var(--red)':'var(--green)'}}>Rs {fmt(cash-cost)}</strong></div>}
+              {buyErr&&<div className="err">{buyErr}</div>}
+              <button className="buy-btn" onClick={buy} disabled={cost>cash} style={{marginTop:10}}>BUY {qty} x {quote.symbol.replace('.NS','')}</button>
+            </div>}
+
+            <div style={{marginTop:20,paddingTop:16,borderTop:'1px solid var(--border)',textAlign:'center'}}>
+              <button onClick={()=>{setCash(INITIAL_CASH);setHoldings([]);setTxLog([]);setHistory(seedHistory(INITIAL_CASH));setQuote(null);setSearch('');}}
+                style={{background:'none',border:'1px solid var(--border)',color:'var(--muted2)',borderRadius:6,padding:'6px 16px',cursor:'pointer',fontSize:'0.72rem',fontFamily:"'IBM Plex Mono',monospace"}}
+                onMouseEnter={e=>{e.target.style.borderColor='var(--red)';e.target.style.color='var(--red)';}}
+                onMouseLeave={e=>{e.target.style.borderColor='var(--border)';e.target.style.color='var(--muted2)';}}>
+                RESET PORTFOLIO
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
